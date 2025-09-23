@@ -1,0 +1,32 @@
+export declare const ErrorMessages: {
+    AUTH_INVALID_CREDENTIALS: string;
+    AUTH_REFRESH_TOKEN_INVALID: string;
+    AUTH_MISSING_EMAIL: string;
+    AUTH_MISSING_PASSWORD: string;
+    AUTH_LOGOUT_SUCCESS: string;
+    USER_MISSING_NAME: string;
+    USER_MISSING_ROLE: string;
+    USER_NOT_FOUND: string;
+    USER_IMAGE_REQUIRED: string;
+    USER_IMAGE_UPLOADED: string;
+    TODO_MISSING_TITLE: string;
+    TODO_MISSING_COMPLETED: string;
+    TODO_NOT_FOUND: string;
+    TODO_USERID_REQUIRED: string;
+    TODO_OWNER_ONLY_SHARE: string;
+    TODO_CREATED: string;
+    TODO_UPDATED: string;
+    TODO_DELETED: string;
+    HISTO_MISSING_FIELDS: string;
+    HISTO_NOT_FOUND: string;
+    HISTO_CREATED: string;
+    HISTO_UPDATED: string;
+    HISTO_DELETED: string;
+    SERVER_ERROR: string;
+    BAD_REQUEST: string;
+    FORBIDDEN: string;
+    NOT_FOUND: string;
+    UNAUTHORIZED: string;
+    INTERNAL_SERVER_ERROR: string;
+};
+//# sourceMappingURL=errorMessage.d.ts.map

@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model todo {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  historiques Historique[]
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares    TodoShare[]
+}
+enum Role {
+  USER
+  ADMIN
+}
+
+model user {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  imageUrl  String?
+  todos     todo[]
+  historiques Historique[]
+  role      Role   @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sharedTodos TodoShare[]
+}
+
+model TodoShare {
+  id        Int      @id @default(autoincrement())
+  todo      todo     @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  todoId    Int
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  canEdit   Boolean  @default(false)
+  canDelete Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+model Historique {
+  id        Int      @id @default(autoincrement())
+  action    String
+  userId    Int
+  todoId    Int
+  timestamp DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todo      todo     @relation(fields: [todoId], references: [id], onDelete: Cascade)
+}

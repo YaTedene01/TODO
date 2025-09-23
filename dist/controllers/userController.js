@@ -1,0 +1,104 @@
+import { UserService } from "../services/userService.js";
+import { CreateTodoSchema } from "../validators/todoSchema.js";
+import { CreateUserSchema } from "../validators/userSchema.js";
+import { ErrorMessages } from "../utils/errorMessage.js";
+import { HttpStatus } from "../utils/httpStatus.js";
+import { UserRepository } from '../repositories/userRepository.js';
+const mnservice = new UserService();
+export class UserController {
+    static async uploadImage(req, res) {
+        try {
+            const id = Number(req.params.id);
+            const file = req.file;
+            if (!file) {
+                return res.status(HttpStatus.BAD_REQUEST).json({ error: ErrorMessages.USER_IMAGE_REQUIRED });
+            }
+            const imageUrl = `/assets/${file.filename}`;
+            const mnuser = await mnservice.updateUser(id, { imageUrl });
+            res.json({ message: ErrorMessages.USER_IMAGE_UPLOADED, imageUrl, user: mnuser });
+        }
+        catch (error) {
+            res.status(HttpStatus.BAD_REQUEST).json({ error: error.message });
+        }
+    }
+    static async getAll(_req, res) {
+        try {
+            const mnusers = await mnservice.getAllUsers();
+            const usersWithImageUrl = mnusers.map((user) => ({
+                ...user,
+                imageUrl: user.imageUrl ? `${_req.protocol}://${_req.get('host')}${user.imageUrl}` : null
+            }));
+            res.json(usersWithImageUrl);
+        }
+        catch (error) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: ErrorMessages.SERVER_ERROR });
+        }
+    }
+    static async findById(req, res) {
+        try {
+            const id = Number(req.params.id);
+            const mnuser = await mnservice.findUserById(id);
+            if (!mnuser) {
+                return res.status(HttpStatus.NOT_FOUND).json({ error: ErrorMessages.USER_NOT_FOUND });
+            }
+            let imageUrl = mnuser.imageUrl ? `${req.protocol}://${req.get('host')}${mnuser.imageUrl}` : null;
+            return res.json({ ...mnuser, imageUrl });
+        }
+        catch (error) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ error: error.message });
+        }
+    }
+    static async create(req, res) {
+        try {
+            let mndata = req.body;
+            if (req.file) {
+                mndata.imageUrl = `/assets/${req.file.filename}`;
+            }
+            mndata = CreateUserSchema.parse(mndata);
+            const mnuser = await mnservice.createUser(mndata);
+            res.status(HttpStatus.CREATED).json({
+                message: 'Utilisateur créé avec succès',
+                user: mnuser
+            });
+        }
+        catch (error) {
+            const errors = error.errors ?? [{ message: error.message }];
+            res.status(HttpStatus.BAD_REQUEST).json({ errors });
+        }
+    }
+    static async update(req, res) {
+        try {
+            const id = Number(req.params.id);
+            const mndata = CreateUserSchema.parse(req.body);
+            const mnuser = await mnservice.updateUser(id, mndata);
+            res.json(mnuser);
+        }
+        catch (error) {
+            const errors = error.errors ?? [{ message: error.message }];
+            res.status(HttpStatus.BAD_REQUEST).json({ errors });
+        }
+    }
+    static async delete(req, res) {
+        try {
+            const id = Number(req.params.id);
+            await mnservice.deleteUser(id);
+            res.status(HttpStatus.NO_CONTENT).send();
+        }
+        catch (error) {
+            res.status(HttpStatus.BAD_REQUEST).json({ error: error.message });
+        }
+    }
+    static async getSharedTodos(req, res) {
+        try {
+            const userId = Number(req.params.id);
+            // Utilise la méthode getSharedTodos du UserRepository via une instance
+            const userRepo = new UserRepository();
+            const todos = await userRepo.getSharedTodos(userId);
+            res.json(todos);
+        }
+        catch (error) {
+            res.status(HttpStatus.BAD_REQUEST).json({ error: error.message });
+        }
+    }
+}
+//# sourceMappingURL=userController.js.map
