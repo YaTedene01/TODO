@@ -9,13 +9,12 @@ const Header = () => {
     navigate('/login');
   };
   return (
-    <header className="flex items-center justify-between p-4 bg-white shadow-md mb-4">
-      <div className="flex gap-4 items-center">
-        <span className="font-bold text-lg text-blue-700">TodoApp</span>
-      </div>
-      <button onClick={handleLogout} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow transition">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0H18a2.25 2.25 0 012.25 2.25v7.5A2.25 2.25 0 0118 21h-1.5m-7.5 0H6a2.25 2.25 0 01-2.25-2.25v-7.5A2.25 2.25 0 016 9h1.5" />
+    <header className="flex items-center justify-between px-3 py-2 shadow-sm mb-2 border-b border-green-100 w-full min-h-[56px] bg-white">
+      <span className="font-bold text-base sm:text-lg text-green-700">MYTODO</span>
+      <button onClick={handleLogout} className="flex items-center gap-1 sm:gap-2 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-xl shadow transition-all text-sm sm:text-base">
+        {/* Icône logout stylisée (Heroicons outline) */}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 sm:w-5 sm:h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
         </svg>
         Déconnexion
       </button>

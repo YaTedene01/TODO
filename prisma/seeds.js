@@ -8,7 +8,6 @@ async function main() {
   await prisma.historique.deleteMany();
   await prisma.todoShare.deleteMany();
   await prisma.todo.deleteMany();
-  // On ne supprime pas les users pour garder les upsert
   // Hashage des mots de passe
   const users = [
     {
@@ -16,7 +15,7 @@ async function main() {
       password: await bcrypt.hash('admin123', 10),
       name: 'Admin',
       role: 'ADMIN',
-      imageUrl: '/assets/IMG_E5839.JPG',
+      imageUrl: '/assets/YATEDENEFAYE.JPG',
     },
     {
       email: 'user1@example.com',
@@ -49,21 +48,21 @@ async function main() {
   // Création des todos un par un pour récupérer les IDs
   const todo1 = await prisma.todo.create({
     data: {
-      title: 'Learn TypeScript',
+      title: 'faire le sport',
       completed: false,
       userId: 1,
     },
   });
   const todo2 = await prisma.todo.create({
     data: {
-      title: 'Build a Node.js API',
+      title: 'faire des exos',
       completed: false,
       userId: 2,
     },
   });
   const todo3 = await prisma.todo.create({
     data: {
-      title: 'Write documentation',
+      title: 'apprendre mes cours',
       completed: true,
       userId: 3,
     },

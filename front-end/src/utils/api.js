@@ -1,4 +1,3 @@
-// Utilitaire pour les appels API backend
 const API_URL = 'http://localhost:3010';  
 
 export async function apiRequest(path, options = {}) {

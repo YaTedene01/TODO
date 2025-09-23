@@ -16,18 +16,16 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       {!hideHeader && <Header />}
-      <nav className={`flex gap-4 px-4 py-2 bg-blue-50 shadow-sm ${hideHeader ? 'hidden' : ''}`}>
-        <Link to="/dashboard" className="hover:underline">Tableau de bord</Link>
-        <Link to="/todos" className="hover:underline">Todos</Link>
-        {/* <Link to="/historique" className="hover:underline">Historique</Link> */}
+      <nav className={`flex gap-4 px-1 py-2 bg-green-100 shadow-sm ${hideHeader ? 'hidden' : ''}`}>
+        <Link to="/dashboard" className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold shadow hover:bg-green-700 transition-all">Tableau de bord</Link>
+        <Link to="/todos" className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold shadow hover:bg-green-700 transition-all">Todos</Link>
       </nav>
-      <div className="max-w-full mx-auto ml-11 mr-11">
+  <div className="max-w-full mx-auto">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/todos" element={<Todos />} />
-          {/* <Route path="/historique" element={<Historique />} /> */}
           <Route path="*" element={<Login />} />
         </Routes>
       </div>

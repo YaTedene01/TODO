@@ -49,29 +49,31 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h2 className="text-2xl font-bold mb-4">Connexion</h2>
-      <form className="flex flex-col gap-4 w-80" onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="border p-2 rounded"
-          autoComplete="username"
-        />
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="border p-2 rounded"
-          autoComplete="current-password"
-        />
-        {error && <div className="text-red-500">{error}</div>}
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded">Se connecter</button>
-      </form>
-      <button className="mt-4 underline" onClick={() => navigate('/register')}>Créer un compte</button>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 border border-green-100">
+        <h2 className="text-3xl font-bold text-green-700 mb-6 text-center">Connexion</h2>
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="border-2 border-green-300 focus:border-green-500 focus:ring-green-200 focus:ring-2 p-3 rounded-xl outline-none transition-all bg-white"
+            autoComplete="username"
+          />
+          <input
+            type="password"
+            placeholder="Mot de passe"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="border-2 border-green-300 focus:border-green-500 focus:ring-green-200 focus:ring-2 p-3 rounded-xl outline-none transition-all bg-white"
+            autoComplete="current-password"
+          />
+          {error && <div className="text-red-500 text-center font-medium">{error}</div>}
+          <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow transition-all">Se connecter</button>
+        </form>
+        <button className="mt-6 w-full text-green-700 hover:text-green-900 underline font-semibold transition-all" onClick={() => navigate('/register')}>Créer un compte</button>
+      </div>
     </div>
   );
 };
