@@ -146,6 +146,4 @@ enum Role {
 }
 ```
 
-## Auteur
-Moustapha Ndiaye
 # TODO
