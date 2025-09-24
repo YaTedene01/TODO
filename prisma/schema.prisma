@@ -15,6 +15,9 @@ datasource db {
 model todo {
   id        Int      @id @default(autoincrement())
   title     String
+  description String?
+  imageUrl  String?
+  audioUrl  String?
   completed Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

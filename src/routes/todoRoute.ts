@@ -1,6 +1,7 @@
 
 import { Router } from "express";
 import { todoController } from "../controllers/todoController.js";
+// Ajout d'une méthode directe pour la création depuis index.ts
 import { todoAccess } from "../middlewares/access.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
 

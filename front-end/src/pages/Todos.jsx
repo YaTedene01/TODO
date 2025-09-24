@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
-import { ClipboardList, CheckCircle2, Pencil, Trash2, Share2, History, Fullscreen } from 'lucide-react';
+import { ClipboardList, CheckCircle2, Pencil, Trash2, Share2, History, Fullscreen, Mic } from 'lucide-react';
 
 const Todos = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -11,7 +11,49 @@ const Todos = () => {
   const [todos, setTodos] = useState([]);
   const navigate = useNavigate();
   const userId = Number(localStorage.getItem('userId'));
-  const [newTodo, setNewTodo] = useState({ title: '', description: '' });
+  const [newTodo, setNewTodo] = useState({ title: '', description: '', image: null, audio: null });
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  // Fonction pour démarrer l'enregistrement
+  const startRecording = async () => {
+    setError('');
+    setAudioURL(null);
+    audioChunksRef.current = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new window.MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setNewTodo(todo => ({ ...todo, audio: audioBlob }));
+        setAudioURL(URL.createObjectURL(audioBlob));
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+      // Arrêt automatique après 30 secondes
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+        }
+      }, 30000);
+    } catch (err) {
+      setError("Impossible d'accéder au micro");
+    }
+  };
+
+  // Fonction pour arrêter l'enregistrement
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
   const [error, setError] = useState('');
   const [shareId, setShareId] = useState('');
   const [shareTodoId, setShareTodoId] = useState(null);
@@ -55,16 +97,34 @@ const Todos = () => {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!newTodo.title.trim()) return;
+    setError('');
+    if (!newTodo.title.trim() || !newTodo.description.trim()) {
+      setError('Le titre et la description sont obligatoires.');
+      return;
+    }
     try {
-      await apiRequest('/api/todo', {
+      const formData = new FormData();
+      formData.append('title', newTodo.title);
+      formData.append('description', newTodo.description);
+      formData.append('completed', false);
+      if (newTodo.image) formData.append('image', newTodo.image);
+      if (newTodo.audio) formData.append('audio', newTodo.audio);
+      await apiRequest('/api/todo/upload', {
         method: 'POST',
-        body: JSON.stringify({ title: newTodo.title, completed: false, description: newTodo.description }),
+        body: formData,
       });
-      setNewTodo({ title: '', description: '' });
+      setNewTodo({ title: '', description: '', image: null, audio: null });
       fetchTodos();
     } catch (err) {
-      setError(err?.errors?.[0]?.message || err?.error || 'Erreur lors de l\'ajout');
+      let msg = '';
+      if (err.errors && Array.isArray(err.errors)) {
+        msg = err.errors.map(e => e.message).join(' | ');
+      } else if (err.error) {
+        msg = err.error;
+      } else {
+        msg = err.message || "Erreur lors de l'ajout";
+      }
+      setError(msg);
     }
   };
 
@@ -124,53 +184,82 @@ const Todos = () => {
 
   return (
   <div className="min-h-[60vh] bg-white p-2 overflow-hidden" style={{ width: '100vw', maxWidth: '100vw' }}>
-      {currentUser && (
-        <div className="flex items-center gap-4 mb-2 justify-center">
-          <img src={currentUser.imageUrl || '/vite.svg'} alt="avatar" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
-          <span className="font-bold text-green-700 text-base">{currentUser.name || currentUser.nom || currentUser.email}</span>
+      <div className="relative mb-4">
+        <div className="absolute  right-5 flex-items-center">
+          {currentUser && (
+            <>
+              <img src={currentUser.imageUrl || '/vite.svg'} alt="avatar" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
+              <span className="font-bold text-green-700 text-base">{currentUser.name || currentUser.nom || currentUser.email}</span>
+            </>
+          )}
         </div>
-      )}
-  <div className="flex gap-1 justify-start items-center sm:gap-2 mb-4">
-        <button
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold border border-green-600 bg-gradient-to-r from-green-100 to-green-300 text-green-700 shadow hover:from-green-200 hover:to-green-400 transition-all text-xs ${activeTab === 'all' ? 'font-bold ring-2 ring-green-400' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          <ClipboardList className="w-4 h-4" /> Tous les Todos
-        </button>
-        <button
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold border border-green-600 bg-gradient-to-r from-green-100 to-green-300 text-green-700 shadow hover:from-green-200 hover:to-green-400 transition-all text-xs ${activeTab === 'user' ? 'font-bold ring-2 ring-green-400' : ''}`}
-          onClick={() => setActiveTab('user')}
-        >
-          <ClipboardList className="w-4 h-4" /> Mes Todos
-        </button>
-        <button
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold border border-green-600 bg-gradient-to-r from-green-100 to-green-300 text-green-700 shadow hover:from-green-200 hover:to-green-400 transition-all text-xs ${activeTab === 'historique' ? 'font-bold ring-2 ring-green-400' : ''}`}
-          onClick={() => setActiveTab('historique')}
-        >
-          <History className="w-4 h-4" /> Historique
-        </button>
+        <div className="flex gap-1 items-center sm:gap-2">
+          <button
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold border border-green-600 bg-gradient-to-r from-green-100 to-green-300 text-green-700 shadow hover:from-green-200 hover:to-green-400 transition-all text-xs ${activeTab === 'all' ? 'font-bold ring-2 ring-green-400' : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            <ClipboardList className="w-4 h-4" /> Toutes les Taches
+          </button>
+          <button
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold border border-green-600 bg-gradient-to-r from-green-100 to-green-300 text-green-700 shadow hover:from-green-200 hover:to-green-400 transition-all text-xs ${activeTab === 'user' ? 'font-bold ring-2 ring-green-400' : ''}`}
+            onClick={() => setActiveTab('user')}
+          >
+            <ClipboardList className="w-4 h-4" /> Mes Taches
+          </button>
+          <button
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold border border-green-600 bg-gradient-to-r from-green-100 to-green-300 text-green-700 shadow hover:from-green-200 hover:to-green-400 transition-all text-xs ${activeTab === 'historique' ? 'font-bold ring-2 ring-green-400' : ''}`}
+            onClick={() => setActiveTab('historique')}
+          >
+            <History className="w-4 h-4" /> Historique
+          </button>
+        </div>
       </div>
+      {/* Suppression de la duplication des boutons */}
 
       {(activeTab === 'all' || activeTab === 'user') && (
         <>
           <div className="mb-2 w-full flex justify-center items-center mx-auto">
-            <form className="w-full max-w-xs bg-white flex flex-col items-center p-2 rounded-xl shadow border border-green-200 aspect-square" onSubmit={handleAdd}>
+            <form className="w-full max-w-xs bg-white flex flex-col items-center p-2 rounded-xl shadow  border-4 border-green-200 aspect-square" onSubmit={handleAdd}>
               <h2 className="text-base font-bold text-green-700 mb-1">Ajouter une tâche</h2>
+
               <input
                 type="text"
                 placeholder="Titre du todo"
                 value={newTodo.title}
                 onChange={e => setNewTodo({ ...newTodo, title: e.target.value })}
-                className="w-full border border-green-300 py-4 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
-                required
+                className="w-full border-2 border-green-300 py-4 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
+                autoComplete="off"
               />
               <textarea
-                placeholder="Description (optionnelle)"
+                placeholder="Description"
                 value={newTodo.description}
                 onChange={e => setNewTodo({ ...newTodo, description: e.target.value })}
-                className="w-full border border-green-300 py-6 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
-                rows={4}
+                className="w-full border-2 border-green-300 py-2 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
+                rows={2}
+                autoComplete="off"
               />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={e => setNewTodo({ ...newTodo, image: e.target.files[0] })}
+                className="w-full border-2 border-green-300 py-4 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-2"
+                style={{ fontSize: '1rem', height: '4rem' }}
+              />
+              <div className="w-full flex flex-col items-center mb-2">
+                {isRecording ? (
+                  <button type="button" onClick={stopRecording} className="bg-red-500 text-white p-2 rounded-full mb-1 flex items-center justify-center" title="Arrêter l'enregistrement">
+                    <Mic className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button type="button" onClick={startRecording} className="bg-green-500 text-white p-2 rounded-full mb-1 flex items-center justify-center" title="Enregistrer un audio">
+                    <Mic className="w-5 h-5" />
+                  </button>
+                )}
+                {audioURL && (
+                  <audio controls src={audioURL} className="mt-2 w-full" />
+                )}
+              </div>
+              {error && <div className="text-red-500 text-center font-medium mb-2">{error}</div>}
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-lg shadow hover:from-green-600 hover:to-green-800 text-base font-bold"
@@ -180,23 +269,37 @@ const Todos = () => {
             </form>
           </div>
 
-          {error && <div className="text-red-500 text-center mb-2 font-semibold text-sm">{error}</div>}
+          {/* Suppression du doublon d'affichage d'erreur ici, l'erreur est déjà affichée dans le formulaire */}
 
           {/* Pagination logic and grid */}
           {(() => {
-            const filteredTodos = activeTab === 'all' ? todos : todos.filter(todo => todo.userId === userId);
+            let filteredTodos = activeTab === 'all' ? todos : todos.filter(todo => todo.userId === userId);
+            // Trie par date de création décroissante (plus récent devant)
+            filteredTodos = filteredTodos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             const indexOfLastTodo = currentPage * todosPerPage;
             const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
             const currentTodos = filteredTodos.slice(indexOfFirstTodo, indexOfLastTodo);
             const totalPages = Math.ceil(filteredTodos.length / todosPerPage);
             return (
               <>
-                <div className="flex flex-row flex-nowrap justify-between " style={{ width: '90%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden', overflowY: 'hidden' }}>
+                <div className="flex flex-row flex-nowrap gap-2 " style={{ width: '90%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden', overflowY: 'hidden' }}>
                   {currentTodos.map(todo => (
                     <div
                       key={todo.id}
-                      className="bg-white p-1 flex flex-col justify-between transition-all duration-300 hover:scale-105 rounded-lg border border-green-200 aspect-square" style={{ minWidth: '192px', maxWidth: '288px', minHeight: '158px', maxHeight: '238px' }}
+                      className="bg-white p-1 flex flex-col justify-between transition-all duration-300 hover:scale-105 rounded-lg border-2 border-green-400 aspect-square" style={{ minWidth: '192px', maxWidth: '288px', minHeight: '158px', maxHeight: '238px' }}
                     >
+                      <div className="flex justify-center items-center w-full h-24 bg-gray-100 rounded-t-lg mb-2 overflow-hidden">
+                        <img
+                          src={todo.imageUrl ? `http://localhost:3010${todo.imageUrl}` : '/vite.svg'}
+                          alt="Todo"
+                          className="w-20 h-20 object-cover rounded-lg"
+                          style={{ maxWidth: '80px', maxHeight: '80px' }}
+                          onError={e => { e.target.src = '/vite.svg'; }}
+                        />
+                      </div>
+                      {todo.audioUrl && (
+                        <audio controls src={`http://localhost:3010${todo.audioUrl}`} className="w-full mb-2" />
+                      )}
                       {/* ...existing card content... */}
                       <div className="flex justify-between items-start mb-2">
                         <div>

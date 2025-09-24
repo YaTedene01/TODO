@@ -1,13 +1,16 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     navigate('/login');
   };
+  const hideHeader = ["/login", "/register"].includes(location.pathname);
+  if (hideHeader) return null;
   return (
     <header className="flex items-center justify-between px-3 py-2 shadow-sm mb-2 border-b border-green-100 w-full min-h-[56px] bg-white">
       <span className="font-bold text-base sm:text-lg text-green-700">MYTODO</span>

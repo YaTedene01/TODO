@@ -13,6 +13,17 @@ const mnservice = new TodoService();
 const historiqueService = new HistoriqueService();
 
 export class todoController {
+    // Création directe pour upload avec image
+    static async createDirect(todoData: any) {
+        const mntodo = await mnservice.createTodo(todoData);
+        await historiqueService.create({
+            userId: mntodo.userId,
+            action: "CREATE",
+            todoId: mntodo.id,
+            timestamp: new Date()
+        });
+        return mntodo;
+    }
     static async share(req: AuthenticatedRequest, res: Response) {
         try {
             const todoId: number = Number(req.params.id);

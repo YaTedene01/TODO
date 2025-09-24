@@ -46,7 +46,7 @@ const Register = () => {
       });
       localStorage.setItem('token', result.accessToken || result.token);
       if (result.userId) localStorage.setItem('userId', result.userId.toString());
-      navigate('/dashboard');
+      navigate('/login');
     } catch (err) {
       let msg = '';
       if (err.errors && Array.isArray(err.errors)) {
