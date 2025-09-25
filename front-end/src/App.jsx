@@ -6,15 +6,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Todos from './pages/Todos';
-// import Historique from './pages/Historique';
 import Header from './components/Header';
 import './App.css';
 
 function App() {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
-  // On masque le header sur la page de login et register
-  const hideHeader = ["/login", "/register"].includes(location.pathname);
+  const hideHeader = ["/", "/login", "/register"].includes(location.pathname);
 
   useEffect(() => {
     if (!hideHeader) {

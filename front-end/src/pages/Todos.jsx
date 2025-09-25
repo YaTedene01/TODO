@@ -29,10 +29,9 @@ const Todos = () => {
       } else {
         setFinishedAlert(null);
       }
-    }, 10000); // vérifie toutes les 10 secondes
+    }, 10000); 
     return () => clearInterval(interval);
   }, [todos, userId]);
-  // Fonction pour démarrer l'enregistrement
   const startRecording = async () => {
     setError('');
     setAudioURL(null);
@@ -51,7 +50,6 @@ const Todos = () => {
       };
       mediaRecorder.start();
       setIsRecording(true);
-      // Arrêt automatique après 30 secondes
       setTimeout(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
           mediaRecorderRef.current.stop();
@@ -63,7 +61,6 @@ const Todos = () => {
     }
   };
 
-  // Fonction pour arrêter l'enregistrement
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
@@ -77,7 +74,6 @@ const Todos = () => {
   const [editTodoId, setEditTodoId] = useState(null);
   const [editTodo, setEditTodo] = useState({ title: '', description: '' });
   const [fetchId, setFetchId] = useState('');
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const todosPerPage = 6;
 
@@ -91,21 +87,17 @@ const Todos = () => {
   };
 
   useEffect(() => {
-    // Récupérer l'utilisateur connecté
     apiRequest('/api/user/me')
       .then(setCurrentUser)
       .catch(() => {});
-    // Redirige si pas connecté
     if (!localStorage.getItem('token')) {
       navigate('/login');
       return;
     }
     fetchTodos();
-    // Historique
     apiRequest('/api/historique')
       .then(setHistorique)
       .catch(() => setError('Erreur lors du chargement de l\'historique'));
-    // Récupérer tous les utilisateurs pour afficher leur nom dans l'historique
     apiRequest('/api/user')
       .then(setUsers)
       .catch(() => {});
@@ -235,7 +227,6 @@ const Todos = () => {
           </button>
         </div>
       </div>
-      {/* Suppression de la duplication des boutons */}
 
       {(activeTab === 'all' || activeTab === 'user') && (
         <>
@@ -294,7 +285,6 @@ const Todos = () => {
                   <audio controls src={audioURL} className="mt-2 w-full" />
                 )}
               </div>
-              {/* Affichage des erreurs du formulaire sauf autorisation */}
               {error && error !== "Vous n'avez pas les droits nécessaires" && (
                 <div className="text-red-500 text-center font-medium mb-2">{error}</div>
               )}
@@ -307,15 +297,13 @@ const Todos = () => {
             </form>
           </div>
 
-          {/* Affichage du message d'autorisation en dehors du formulaire */}
+          {/*  */}
           {error === "Vous n'avez pas les droits nécessaires" && (
             <div className="w-full text-center text-red-500 font-bold my-2">{error}</div>
           )}
 
-          {/* Pagination logic and grid */}
           {(() => {
             let filteredTodos = activeTab === 'all' ? todos : todos.filter(todo => todo.userId === userId);
-            // Trie par date de création décroissante (plus récent devant)
             filteredTodos = filteredTodos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             const indexOfLastTodo = currentPage * todosPerPage;
             const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
@@ -354,7 +342,6 @@ const Todos = () => {
                           <audio controls src={`http://localhost:3010${todo.audioUrl}`} style={{ width: '180px', height: '40px' }} />
                         </div>
                       )}
-                      {/* Titre/description en bas à gauche, statut en bas à droite */}
                       <div className="absolute bottom-10 left-2 flex flex-col items-start text-left">
                         <h3 className={`text-base font-bold mb-1 ${todo.completed ? 'text-gray-400 line-through' : 'text-green-700'}`}>{todo.title}</h3>
                         <p className={`text-xs ${todo.completed ? 'text-gray-400' : 'text-gray-600'}`}>{todo.description}</p>
@@ -394,7 +381,6 @@ const Todos = () => {
                     </div>
                   ))}
                 </div>
-                {/* Pagination controls */}
                 <div className="flex justify-center items-center mt-2 gap-1">
                   <button
                     className="px-2 py-1 rounded bg-gradient-to-r from-green-100 to-green-300 text-green-700 font-semibold shadow hover:from-green-200 hover:to-green-400 disabled:opacity-50 text-xs"
@@ -448,7 +434,6 @@ const Todos = () => {
         </div>
       )}
 
-      {/* Footer */}
       <div className="text-center text-gray-400 mt-4 text-xs">
         &copy; {new Date().getFullYear()} Todos App. Tous droits réservés.
       </div>

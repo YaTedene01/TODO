@@ -28,7 +28,6 @@ const Dashboard = () => {
   if (error) return <div className="p-8 text-red-500">{error}</div>;
   if (!user) return <div className="p-8">Chargement...</div>;
 
-  // Statistiques dynamiques
   const totalTodos = todos.length;
   const totalUsers = users.length;
   

@@ -8,7 +8,6 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Ajout de la validation côté front
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -21,19 +20,16 @@ const Login = () => {
       return;
     }
     try {
-      // On suppose que l'API retourne { accessToken, userId } ou { token, userId }
       const result = await apiRequest('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      // Compatibilité : si c'est juste un string, on ne peut pas stocker l'id
       if (typeof result === 'string') {
         localStorage.setItem('token', result);
       } else {
         localStorage.setItem('token', result.accessToken || result.token);
         if (result.userId) localStorage.setItem('userId', result.userId.toString());
       }
-      // Si pas d'id, on va le chercher via /api/user?email=...
       if (!localStorage.getItem('userId')) {
         try {
           const users = await apiRequest(`/api/user?email=${encodeURIComponent(email)}`);

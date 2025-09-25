@@ -11,7 +11,6 @@ const Register = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Ajout de la validation côté front
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -37,9 +36,7 @@ const Register = () => {
       await apiRequest('/api/user', {
         method: 'POST',
         body: formData,
-        // Pas de Content-Type ici, le navigateur le gère
       });
-      // Connexion automatique après inscription
       const result = await apiRequest('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
