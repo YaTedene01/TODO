@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
@@ -11,11 +12,26 @@ const Todos = () => {
   const [todos, setTodos] = useState([]);
   const navigate = useNavigate();
   const userId = Number(localStorage.getItem('userId'));
-  const [newTodo, setNewTodo] = useState({ title: '', description: '', image: null, audio: null });
+  const [newTodo, setNewTodo] = useState({ title: '', description: '', image: null, audio: null, endTime: '' });
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const [finishedAlert, setFinishedAlert] = useState(null);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const finishedTodos = todos.filter(todo =>
+        todo.endTime && new Date(todo.endTime) <= now && !todo.completed && todo.userId === userId
+      );
+      if (finishedTodos.length > 0) {
+        setFinishedAlert(`La tâche "${finishedTodos[0].title}" est terminée !`);
+      } else {
+        setFinishedAlert(null);
+      }
+    }, 10000); // vérifie toutes les 10 secondes
+    return () => clearInterval(interval);
+  }, [todos, userId]);
   // Fonction pour démarrer l'enregistrement
   const startRecording = async () => {
     setError('');
@@ -102,18 +118,23 @@ const Todos = () => {
       setError('Le titre et la description sont obligatoires.');
       return;
     }
+    if (!newTodo.endTime) {
+      setError('La date et l\'heure de fin sont obligatoires.');
+      return;
+    }
     try {
       const formData = new FormData();
-      formData.append('title', newTodo.title);
-      formData.append('description', newTodo.description);
-      formData.append('completed', false);
-      if (newTodo.image) formData.append('image', newTodo.image);
-      if (newTodo.audio) formData.append('audio', newTodo.audio);
+  formData.append('title', newTodo.title);
+  formData.append('description', newTodo.description);
+  formData.append('completed', false);
+  formData.append('endTime', newTodo.endTime);
+  if (newTodo.image) formData.append('image', newTodo.image);
+  if (newTodo.audio) formData.append('audio', newTodo.audio);
       await apiRequest('/api/todo/upload', {
         method: 'POST',
         body: formData,
       });
-      setNewTodo({ title: '', description: '', image: null, audio: null });
+  setNewTodo({ title: '', description: '', image: null, audio: null, endTime: '' });
       fetchTodos();
     } catch (err) {
       let msg = '';
@@ -218,6 +239,11 @@ const Todos = () => {
 
       {(activeTab === 'all' || activeTab === 'user') && (
         <>
+          {finishedAlert && (
+            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 text-base font-bold animate-bounce">
+              {finishedAlert}
+            </div>
+          )}
           <div className="mb-2 w-full flex justify-center items-center mx-auto">
             <form className="w-full max-w-xs bg-white flex flex-col items-center p-2 rounded-xl shadow  border-4 border-green-200 aspect-square" onSubmit={handleAdd}>
               <h2 className="text-base font-bold text-green-700 mb-1">Ajouter une tâche</h2>
@@ -230,6 +256,7 @@ const Todos = () => {
                 className="w-full border-2 border-green-300 py-4 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
                 autoComplete="off"
               />
+              
               <textarea
                 placeholder="Description"
                 value={newTodo.description}
@@ -237,6 +264,14 @@ const Todos = () => {
                 className="w-full border-2 border-green-300 py-2 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
                 rows={2}
                 autoComplete="off"
+              />
+              <label className="w-full text-xs font-semibold text-green-700 mb-1">Date et heure de fin</label>
+              <input
+                type="datetime-local"
+                value={newTodo.endTime}
+                onChange={e => setNewTodo({ ...newTodo, endTime: e.target.value })}
+                className="w-full border-2 border-green-300 py-2 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 text-base mb-1"
+                required
               />
               <input
                 type="file"
@@ -259,7 +294,10 @@ const Todos = () => {
                   <audio controls src={audioURL} className="mt-2 w-full" />
                 )}
               </div>
-              {error && <div className="text-red-500 text-center font-medium mb-2">{error}</div>}
+              {/* Affichage des erreurs du formulaire sauf autorisation */}
+              {error && error !== "Vous n'avez pas les droits nécessaires" && (
+                <div className="text-red-500 text-center font-medium mb-2">{error}</div>
+              )}
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-lg shadow hover:from-green-600 hover:to-green-800 text-base font-bold"
@@ -269,7 +307,10 @@ const Todos = () => {
             </form>
           </div>
 
-          {/* Suppression du doublon d'affichage d'erreur ici, l'erreur est déjà affichée dans le formulaire */}
+          {/* Affichage du message d'autorisation en dehors du formulaire */}
+          {error === "Vous n'avez pas les droits nécessaires" && (
+            <div className="w-full text-center text-red-500 font-bold my-2">{error}</div>
+          )}
 
           {/* Pagination logic and grid */}
           {(() => {
@@ -282,51 +323,64 @@ const Todos = () => {
             const totalPages = Math.ceil(filteredTodos.length / todosPerPage);
             return (
               <>
-                <div className="flex flex-row flex-nowrap gap-2 " style={{ width: '90%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden', overflowY: 'hidden' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full" style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
                   {currentTodos.map(todo => (
                     <div
                       key={todo.id}
-                      className="bg-white p-1 flex flex-col justify-between transition-all duration-300 hover:scale-105 rounded-lg border-2 border-green-400 aspect-square" style={{ minWidth: '192px', maxWidth: '288px', minHeight: '158px', maxHeight: '238px' }}
+                      className="bg-white p-1 flex flex-col justify-between transition-all duration-300 hover:scale-105 rounded-lg border-2 border-green-400 w-full h-full" style={{ height: '260px', minHeight: '260px', maxHeight: '260px', minWidth: '0', position: 'relative' }}
                     >
-                      <div className="flex justify-center items-center w-full h-24 bg-gray-100 rounded-t-lg mb-2 overflow-hidden">
+                      <div className="absolute top-2 left-2 z-10 flex flex-col items-start text-xs text-gray-600 bg-white/80 rounded px-2 py-1 shadow">
+                        <span>Date de début : {todo.createdAt ? `${new Date(todo.createdAt).toLocaleDateString()} ${new Date(todo.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '-'}</span>
+                        <span>Date de fin : {
+                          todo.endTime
+                            ? (() => {
+                                const dt = new Date(todo.endTime);
+                                if (isNaN(dt.getTime())) return '-';
+                                return `${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                              })()
+                            : '-'
+                        }</span>
+                      </div>
+                      <div className="absolute top-2 right-2 z-10 flex items-center justify-center w-16 h-16 bg-gray-100 rounded-lg overflow-hidden border border-green-200 shadow">
                         <img
                           src={todo.imageUrl ? `http://localhost:3010${todo.imageUrl}` : '/vite.svg'}
                           alt="Todo"
-                          className="w-20 h-20 object-cover rounded-lg"
-                          style={{ maxWidth: '80px', maxHeight: '80px' }}
+                          className="w-full h-full object-cover"
                           onError={e => { e.target.src = '/vite.svg'; }}
                         />
                       </div>
                       {todo.audioUrl && (
-                        <audio controls src={`http://localhost:3010${todo.audioUrl}`} className="w-full mb-2" />
-                      )}
-                      {/* ...existing card content... */}
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className={`text-base font-bold mb-1 ${todo.completed ? 'text-gray-400 line-through' : 'text-green-700'}`}>{todo.title}</h3>
-                          <p className={`text-xs ${todo.completed ? 'text-gray-400' : 'text-gray-600'}`}>{todo.description}</p>
+                        <div className="flex justify-center items-center w-full mb-2" style={{ position: 'absolute', left: 0, right: 0, top: '40%', transform: 'translateY(-50%)' }}>
+                          <audio controls src={`http://localhost:3010${todo.audioUrl}`} style={{ width: '180px', height: '40px' }} />
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold uppercase shadow ${todo.completed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{todo.completed ? 'Terminée' : 'En cours'}</span>
-                      </div>
-                      <div className="flex gap-1 justify-end items-center">
-                        {!todo.completed && (
-                          <button onClick={() => handleComplete(todo.id)} title="Marquer comme terminée" className="text-green-600 hover:text-green-800 transition"><CheckCircle2 className="w-4 h-4" /></button>
-                        )}
-                        <button onClick={() => handleEdit(todo)} title="Modifier la tâche" className="text-yellow-600 hover:text-yellow-800 transition"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(todo.id)} title="Supprimer la tâche" className="text-red-600 hover:text-red-800 transition"><Trash2 className="w-4 h-4" /></button>
-                        <button onClick={() => setShareTodoId(todo.id)} title="Partager la tâche" className="text-orange-600 hover:text-orange-800 transition"><Share2 className="w-4 h-4" /></button>
-                      </div>
-                      {editTodoId === todo.id && (
-                        <form className="mt-2 border-t pt-2" onSubmit={handleEditSubmit}>
-                          <h4 className="text-xs font-semibold mb-1 text-purple-700">Modifier</h4>
-                          <input type="text" value={editTodo.title} onChange={e => setEditTodo({ ...editTodo, title: e.target.value })} className="w-full border p-1 rounded-lg mb-1 focus:outline-none focus:ring-2 focus:ring-yellow-300 text-xs" required />
-                          <textarea value={editTodo.description} onChange={e => setEditTodo({ ...editTodo, description: e.target.value })} className="w-full border p-1 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-yellow-300 text-xs" placeholder="Description (optionnelle)" />
-                          <div className="flex gap-1">
-                            <button type="submit" className="flex-1 bg-yellow-500 text-white p-1 rounded-lg shadow hover:bg-yellow-600 transition text-xs font-bold">Enregistrer</button>
-                            <button type="button" onClick={() => setEditTodoId(null)} className="flex-1 bg-gray-300 text-gray-700 p-1 rounded-lg hover:bg-gray-400 transition text-xs font-bold">Annuler</button>
-                          </div>
-                        </form>
                       )}
+                      {/* Titre/description en bas à gauche, statut en bas à droite */}
+                      <div className="absolute bottom-10 left-2 flex flex-col items-start text-left">
+                        <h3 className={`text-base font-bold mb-1 ${todo.completed ? 'text-gray-400 line-through' : 'text-green-700'}`}>{todo.title}</h3>
+                        <p className={`text-xs ${todo.completed ? 'text-gray-400' : 'text-gray-600'}`}>{todo.description}</p>
+                        {editTodoId === todo.id && (
+                          <div style={{ margin:'0px' }}>
+                            <form className="mt-1 border-t pt-1 max-w-[140px]" onSubmit={handleEditSubmit} style={{ fontSize: '0.85rem' }}>
+                            <h4 className="text-xs font-semibold mb-1 text-green-700">Modifier</h4>
+                            <input type="text" value={editTodo.title} onChange={e => setEditTodo({ ...editTodo, title: e.target.value })} className="w-full border p-0.5 rounded-lg mb-1 focus:outline-none focus:ring-2 focus:ring-yellow-300 text-xs" required style={{ fontSize: '0.85rem' }} />
+                            <textarea value={editTodo.description} onChange={e => setEditTodo({ ...editTodo, description: e.target.value })} className="w-full border p-0.5 rounded-lg mb-1 focus:outline-none focus:ring-2 focus:ring-yellow-300 text-xs" placeholder="Description (optionnelle)" style={{ fontSize: '0.85rem', minHeight: '32px' }} />
+                            <div className="flex gap-1">
+                              <button type="submit" className="flex-1 bg-green-500 text-white p-0.5 rounded-lg shadow hover:bg-yellow-600 transition text-xs font-bold" style={{ fontSize: '0.85rem' }}>Enregistrer</button>
+                              <button type="button" onClick={() => setEditTodoId(null)} className="flex-1 bg-gray-300 text-gray-700 p-0.5 rounded-lg hover:bg-gray-400 transition text-xs font-bold" style={{ fontSize: '0.85rem' }}>Annuler</button>
+                            </div>
+                            </form>
+                          </div>
+                        )}
+                      </div>
+                      <span className={`absolute bottom-10 right-2 px-2 py-1 rounded-full text-xs font-semibold uppercase shadow ${todo.completed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{todo.completed ? 'Terminée' : 'En cours'}</span>
+                      <div className="absolute bottom-2 right-2 flex gap-2 items-center">
+                        {!todo.completed && (
+                          <button onClick={() => handleComplete(todo.id)} title="Marquer comme terminée" className="text-green-600 hover:text-green-800 transition"><CheckCircle2 className="w-5 h-5" /></button>
+                        )}
+                        <button onClick={() => handleEdit(todo)} title="Modifier la tâche" className="text-yellow-600 hover:text-yellow-800 transition"><Pencil className="w-5 h-5" /></button>
+                        <button onClick={() => handleDelete(todo.id)} title="Supprimer la tâche" className="text-red-600 hover:text-red-800 transition"><Trash2 className="w-5 h-5" /></button>
+                        <button onClick={() => setShareTodoId(todo.id)} title="Partager la tâche" className="text-orange-600 hover:text-orange-800 transition"><Share2 className="w-5 h-5" /></button>
+                      </div>
                       {shareTodoId === todo.id && (
                         <div className="mt-2 border-t pt-2 flex flex-col items-center w-full">
                           <h4 className="text-xs font-semibold mb-1 text-orange-700">Partager avec un utilisateur</h4>

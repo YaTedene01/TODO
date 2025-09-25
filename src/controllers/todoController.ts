@@ -15,6 +15,18 @@ const historiqueService = new HistoriqueService();
 export class todoController {
     // Création directe pour upload avec image
     static async createDirect(todoData: any) {
+            // Force la conversion endTime en Date si présent
+            if (todoData.endTime && typeof todoData.endTime === 'string') {
+                // Prisma attend un type Date ou string ISO, on convertit en string ISO
+                const dt = new Date(todoData.endTime);
+                if (!isNaN(dt.getTime())) {
+                    todoData.endTime = dt.toISOString();
+                } else {
+                    todoData.endTime = undefined;
+                }
+            }
+            // Log pour debug
+            console.log('[DEBUG] Création todo - endTime transmis à Prisma :', todoData.endTime);
         const mntodo = await mnservice.createTodo(todoData);
         await historiqueService.create({
             userId: mntodo.userId,
@@ -96,7 +108,15 @@ export class todoController {
         try {
             const mndata = CreateTodoSchema.parse(req.body);
             // Injecte le userId du token dans la création
-            const todoData = { ...mndata, userId: req.user?.id };
+            let todoData = { ...mndata, userId: req.user?.id };
+                if (todoData.endTime && typeof todoData.endTime === 'string') {
+                    const dt = new Date(todoData.endTime);
+                    if (!isNaN(dt.getTime())) {
+                        todoData.endTime = dt.toISOString();
+                    } else {
+                        todoData.endTime = undefined;
+                    }
+                }
             const mntodo = await mnservice.createTodo(todoData);
             await historiqueService.create({
                 userId: mntodo.userId,

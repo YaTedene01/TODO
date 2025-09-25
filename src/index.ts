@@ -55,7 +55,7 @@ app.post('/api/todo/upload', requireAuth, upload.fields([
   { name: 'audio', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        const { title, description, completed } = req.body;
+    const { title, description, completed, endTime } = req.body;
         const userId = (req as any).user?.id;
         if (!title) return res.status(400).json({ error: 'Le titre est requis.' });
         let imageUrl = undefined;
@@ -66,13 +66,21 @@ app.post('/api/todo/upload', requireAuth, upload.fields([
         if (req.files && (req.files as any).audio && (req.files as any).audio[0]) {
             audioUrl = `/assets/${(req.files as any).audio[0].filename}`;
         }
-        const todoData = {
+        let endTimeValue = undefined;
+        if (endTime) {
+            const dt = new Date(endTime);
+            if (!isNaN(dt.getTime())) {
+                endTimeValue = dt.toISOString();
+            }
+        }
+        const todoData: any = {
             title,
             description,
             completed: completed === 'true' || completed === true,
             userId,
             imageUrl,
-            audioUrl
+            audioUrl,
+            endTime: endTimeValue
         };
         const mntodo = await todoController.createDirect(todoData);
         res.status(201).json(mntodo);
