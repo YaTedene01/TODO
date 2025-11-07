@@ -1,7 +1,7 @@
 # test_node_js
 
 ## Description
-Ce projet est une API RESTful de gestion de tâches (todos) avec authentification, partage de tâches, gestion d'utilisateurs et historique des actions. Il utilise Node.js, Express, TypeScript et Prisma avec une base de données MySQL.
+Ce projet est une API RESTful de gestion de tâches (todos) avec authentification, partage de tâches, gestion d'utilisateurs et historique des actions. Il utilise Node.js, Express, TypeScript et Prisma avec une base de données PostgreSql.
 
 ## Fonctionnalités principales
 - Authentification JWT
